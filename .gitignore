@@ -1,0 +1,28 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+*.log
+npm-debug.log*
+
+# Generated Asterisk config (rendered from config/users.json)
+infra/asterisk/conf/pjsip_endpoints.conf
+infra/asterisk/conf/extensions_users.conf
+infra/asterisk/conf/extensions_did.conf
+infra/asterisk/conf/voicemail_users.conf
+infra/asterisk/conf/queues_members.conf
+
+# TLS material — never commit keys
+infra/certs/*.pem
+infra/certs/*.key
+infra/certs/*.crt
+infra/certs/*.csr
+infra/certs/*.srl
+
+# Local user store (contains password hashes)
+config/users.json
+
+.DS_Store
+.vscode/
+.idea/

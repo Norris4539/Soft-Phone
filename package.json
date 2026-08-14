@@ -1,0 +1,21 @@
+{
+  "name": "softphone-switchboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser softphone and Asterisk switchboard: one company number, many extensions",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "users:init": "node scripts/manage-users.mjs init",
+    "users:apply": "node scripts/manage-users.mjs apply",
+    "users:list": "node scripts/manage-users.mjs list",
+    "users:add": "node scripts/manage-users.mjs add",
+    "users:passwd": "node scripts/manage-users.mjs passwd",
+    "certs": "./scripts/generate-dev-certs.sh",
+    "prompts": "./scripts/generate-prompts.sh",
+    "check": "npm --prefix server run typecheck && npm --prefix web run typecheck",
+    "build": "npm --prefix server run build && npm --prefix web run build"
+  }
+}

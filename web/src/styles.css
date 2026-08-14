@@ -1,0 +1,755 @@
+/* ---------------------------------------------------------------------------
+   Switchboard — a deliberately plain, high-contrast interface.
+
+   This is a tool people stare at all day while talking to someone, so it
+   favours legibility and large hit targets over decoration. Light and dark
+   both follow the OS setting; nothing here needs a theme switcher.
+   --------------------------------------------------------------------------- */
+
+:root {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-2: #eceef1;
+  --border: #d5d9de;
+  --text: #16181d;
+  --text-muted: #5c6470;
+  --accent: #1f6feb;
+  --accent-text: #ffffff;
+  --green: #1a7f4b;
+  --red: #c0392b;
+  --amber: #b7791f;
+  --radius: 10px;
+  --shadow: 0 1px 3px rgb(0 0 0 / 12%);
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161a;
+    --surface: #1c1f25;
+    --surface-2: #24282f;
+    --border: #333941;
+    --text: #e8eaed;
+    --text-muted: #9aa3af;
+    --accent: #4c8dff;
+    --green: #34c17b;
+    --red: #f0655a;
+    --amber: #e0a63c;
+    --shadow: 0 1px 3px rgb(0 0 0 / 45%);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+/* --- layout --------------------------------------------------------------- */
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.loading {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  color: var(--text-muted);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.topbar__identity {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.topbar__name {
+  font-weight: 600;
+}
+
+.topbar__extension {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.topbar__tabs {
+  display: flex;
+  gap: 4px;
+  margin-inline: auto;
+}
+
+.topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tab {
+  padding: 6px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.tab--active {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.registration {
+  font-size: 13px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+}
+
+.registration--registered {
+  color: var(--green);
+}
+
+.registration--failed {
+  color: var(--red);
+}
+
+.content {
+  flex: 1;
+  padding: 16px;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.phone-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 780px) {
+  .phone-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.phone-layout__main,
+.phone-layout__side {
+  display: grid;
+  gap: 16px;
+}
+
+/* --- shared surfaces ------------------------------------------------------ */
+.panel,
+.dialpad,
+.call-panel,
+.directory,
+.held-calls {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.panel + .panel {
+  margin-top: 16px;
+}
+
+.panel__title {
+  margin: 0 0 12px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.panel__count {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.empty {
+  color: var(--text-muted);
+  margin: 0;
+  padding: 8px 0;
+}
+
+.alert {
+  margin: 0 16px 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  border: 1px solid;
+}
+
+.alert--error {
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+  border-color: var(--red);
+}
+
+.alert--warning {
+  background: color-mix(in srgb, var(--amber) 15%, transparent);
+  border-color: var(--amber);
+}
+
+/* --- buttons -------------------------------------------------------------- */
+.button {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.button:hover:not(:disabled) {
+  border-color: var(--text-muted);
+}
+
+.button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.button--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.button--call {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+
+.button--hangup,
+.button--danger {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+
+.button--quiet {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-muted);
+}
+
+.button--small {
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
+.button--block {
+  width: 100%;
+  padding: 12px;
+}
+
+.control {
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+.control--on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.control--wide {
+  width: 100%;
+}
+
+/* --- fields --------------------------------------------------------------- */
+.field {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.field__label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.field__input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.field__input:focus-visible,
+.button:focus-visible,
+.control:focus-visible,
+.dialpad__key:focus-visible,
+.tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* --- login ---------------------------------------------------------------- */
+.login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.login__card {
+  width: 100%;
+  max-width: 340px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  box-shadow: var(--shadow);
+}
+
+.login__title {
+  margin: 0;
+  font-size: 22px;
+}
+
+.login__subtitle {
+  margin: 4px 0 20px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* --- dialpad -------------------------------------------------------------- */
+.dialpad__display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.dialpad__input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  text-align: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.dialpad__clear {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+.dialpad__keys {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.dialpad__key {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* Large enough to hit reliably on a touchscreen and while distracted. */
+  min-height: 56px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+.dialpad__key:active {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.dialpad__digit {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.dialpad__letters {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+/* --- call panel ----------------------------------------------------------- */
+.call-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.call-panel--held {
+  border-color: var(--amber);
+}
+
+.call-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.call-panel__status {
+  margin: 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.call-panel__party {
+  margin: 2px 0 0;
+  font-size: 22px;
+}
+
+.call-panel__number {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.call-panel__timer {
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
+  color: var(--text-muted);
+}
+
+.call-panel__controls {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+/* --- transfer ------------------------------------------------------------- */
+.transfer {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.transfer--pending {
+  border-color: var(--amber);
+}
+
+.transfer__hint {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.transfer__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* --- incoming call -------------------------------------------------------- */
+.incoming {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 55%);
+  display: grid;
+  place-items: center;
+  z-index: 50;
+}
+
+.incoming__card {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
+  min-width: 300px;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 35%);
+}
+
+.incoming__label {
+  margin: 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.incoming__party {
+  margin: 8px 0 0;
+  font-size: 26px;
+}
+
+.incoming__number {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+}
+
+.incoming__actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.incoming__actions .button {
+  flex: 1;
+  padding: 14px;
+}
+
+/* --- directory ------------------------------------------------------------ */
+.directory__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.directory__header .panel__title {
+  margin: 0;
+}
+
+.directory__search {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  max-width: 160px;
+}
+
+.directory__list,
+.held-calls__list,
+.calls,
+.queues,
+.extensions,
+.queues__members,
+.queues__callers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.directory__item,
+.held-calls__item,
+.extensions__item,
+.queues__member {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.directory__item:last-child,
+.extensions__item:last-child,
+.queues__member:last-child {
+  border-bottom: none;
+}
+
+.directory__identity {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.directory__name,
+.extensions__name,
+.queues__member-name {
+  font-weight: 500;
+}
+
+.directory__meta,
+.extensions__status,
+.queues__member-meta,
+.held-calls__status {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.extensions__name {
+  flex: 1;
+}
+
+.extensions__number {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.queues__member-name {
+  flex: 1;
+}
+
+.status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: var(--text-muted);
+}
+
+.status-dot--available {
+  background: var(--green);
+}
+
+.status-dot--busy {
+  background: var(--red);
+}
+
+.status-dot--ringing {
+  background: var(--amber);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.status-dot--onhold {
+  background: var(--amber);
+}
+
+.status-dot--offline,
+.status-dot--unknown,
+.status-dot--unavailable {
+  background: var(--border);
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-dot--ringing {
+    animation: none;
+  }
+}
+
+/* --- dashboard ------------------------------------------------------------ */
+.calls__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.calls__item:last-child {
+  border-bottom: none;
+}
+
+.calls__main {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+}
+
+.calls__parties {
+  font-weight: 500;
+}
+
+.calls__meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.calls__actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.calls__transfer-input {
+  width: 70px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.queues__item {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.queues__item:last-child {
+  border-bottom: none;
+}
+
+.queues__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.queues__name {
+  margin: 0;
+  font-size: 16px;
+  text-transform: capitalize;
+}
+
+.queues__stats {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.queues__callers {
+  margin: 10px 0;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.queues__position {
+  font-weight: 700;
+  margin-right: 8px;
+}
+
+.queues__wait {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-left: 8px;
+}

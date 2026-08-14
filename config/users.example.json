@@ -1,0 +1,92 @@
+{
+  "$comment": [
+    "Copy to config/users.json and edit, then run: npm run users:apply",
+    "",
+    "Each user is one SIP extension and one softphone login.",
+    "  extension  - the dialable number (3 digits, 1XX, matched by the dialplan)",
+    "  name       - shown as the internal caller ID and in the directory",
+    "  password   - the login password for the web app; replaced by a hash on",
+    "               first apply, so you can write a plaintext password here and",
+    "               it will not stay plaintext",
+    "  sipPassword- the SIP digest secret; generated if omitted",
+    "  role       - 'agent' or 'admin' (admin sees the switchboard dashboard)",
+    "  groups     - ring groups this user is in, e.g. ['reception']",
+    "  queues     - call queues this user takes calls for, with a penalty:",
+    "               lower penalty rings first",
+    "  did        - optional direct inward dial number for this extension",
+    "  outboundCallerId - optional; defaults to the company MAIN_DID",
+    "  voicemailPin     - numeric PIN for *97; generated if omitted",
+    "  email      - voicemail-to-email destination"
+  ],
+
+  "ringGroups": {
+    "reception": {
+      "description": "Who picks up the main line",
+      "strategy": "ringall",
+      "timeout": 25
+    }
+  },
+
+  "queues": {
+    "sales": {
+      "description": "Sales queue (IVR option 1)",
+      "strategy": "rrmemory",
+      "timeout": 20,
+      "wrapuptime": 10,
+      "musicClass": "queue-hold",
+      "announceFrequency": 60,
+      "maxWait": 300
+    },
+    "support": {
+      "description": "Support queue (IVR option 2)",
+      "strategy": "leastrecent",
+      "timeout": 25,
+      "wrapuptime": 15,
+      "musicClass": "queue-hold",
+      "announceFrequency": 60,
+      "maxWait": 300
+    }
+  },
+
+  "users": [
+    {
+      "extension": "100",
+      "name": "Reception",
+      "password": "change-me-reception",
+      "role": "admin",
+      "groups": ["reception"],
+      "queues": [],
+      "email": "reception@example.com"
+    },
+    {
+      "extension": "101",
+      "name": "Alice Nguyen",
+      "password": "change-me-alice",
+      "role": "agent",
+      "groups": ["reception"],
+      "queues": [{ "name": "sales", "penalty": 0 }],
+      "email": "alice@example.com"
+    },
+    {
+      "extension": "102",
+      "name": "Ben Okafor",
+      "password": "change-me-ben",
+      "role": "agent",
+      "groups": [],
+      "queues": [
+        { "name": "sales", "penalty": 1 },
+        { "name": "support", "penalty": 0 }
+      ],
+      "email": "ben@example.com"
+    },
+    {
+      "extension": "103",
+      "name": "Carla Ruiz",
+      "password": "change-me-carla",
+      "role": "agent",
+      "groups": [],
+      "queues": [{ "name": "support", "penalty": 0 }],
+      "email": "carla@example.com"
+    }
+  ]
+}

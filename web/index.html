@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Switchboard</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!--
+      Remote audio lives outside React.  A re-render that recreated this
+      element would tear down the MediaStream attached to it and drop the
+      call's audio, which is a spectacular way to fail.
+    -->
+    <audio id="remote-audio" autoplay></audio>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

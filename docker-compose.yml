@@ -1,0 +1,134 @@
+services:
+  asterisk:
+    build:
+      context: ./infra/asterisk
+    container_name: softphone-asterisk
+    restart: unless-stopped
+    # Asterisk needs a wide RTP range and predictable SIP ports; host
+    # networking avoids per-port NAT mangling of the SDP.  On Linux prefer
+    # `network_mode: host` in production (see docs/DEPLOYMENT.md); explicit
+    # port maps below keep this portable for local development on macOS.
+    ports:
+      - "5060:5060/udp" # SIP trunk signalling
+      - "5060:5060/tcp"
+      - "8089:8089/tcp" # SIP over secure WebSocket (browsers)
+      - "${RTP_START:-10000}-${RTP_END:-10200}:${RTP_START:-10000}-${RTP_END:-10200}/udp"
+    environment:
+      PUBLIC_HOSTNAME: ${PUBLIC_HOSTNAME:-localhost}
+      ASTERISK_SIP_DOMAIN: ${ASTERISK_SIP_DOMAIN:-localhost}
+      MAIN_DID: ${MAIN_DID:-15551234567}
+      MAIN_CALLER_ID_NAME: ${MAIN_CALLER_ID_NAME:-Softphone}
+      OPERATOR_EXTENSION: ${OPERATOR_EXTENSION:-100}
+      IVR_ENABLED: ${IVR_ENABLED:-false}
+      OFFICE_HOURS: ${OFFICE_HOURS:-*,*,*,*}
+      TRUNK_ENABLED: ${TRUNK_ENABLED:-false}
+      TRUNK_AUTH: ${TRUNK_AUTH:-userpass}
+      TRUNK_NAME: ${TRUNK_NAME:-primary}
+      TRUNK_HOST: ${TRUNK_HOST:-}
+      TRUNK_PORT: ${TRUNK_PORT:-5060}
+      TRUNK_TRANSPORT: ${TRUNK_TRANSPORT:-udp}
+      TRUNK_USERNAME: ${TRUNK_USERNAME:-}
+      TRUNK_PASSWORD: ${TRUNK_PASSWORD:-}
+      TRUNK_FROM_USER: ${TRUNK_FROM_USER:-}
+      TRUNK_FROM_DOMAIN: ${TRUNK_FROM_DOMAIN:-}
+      ARI_USERNAME: ${ARI_USERNAME:-switchboard}
+      ARI_PASSWORD: ${ARI_PASSWORD:-switchboard}
+      AMI_USERNAME: ${AMI_USERNAME:-switchboard}
+      AMI_PASSWORD: ${AMI_PASSWORD:-switchboard}
+      RTP_START: ${RTP_START:-10000}
+      RTP_END: ${RTP_END:-10200}
+    volumes:
+      - ./infra/asterisk/conf:/etc/asterisk/templates:ro
+      - ./infra/certs:/etc/asterisk/keys:ro
+      - asterisk-spool:/var/spool/asterisk
+      - asterisk-logs:/var/log/asterisk
+    healthcheck:
+      test: ["CMD", "asterisk", "-rx", "core waitfullybooted"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 20s
+
+  coturn:
+    image: coturn/coturn:4.6
+    container_name: softphone-coturn
+    restart: unless-stopped
+    ports:
+      - "3478:3478/udp"
+      - "3478:3478/tcp"
+      - "${TURN_MIN_PORT:-49160}-${TURN_MAX_PORT:-49200}:${TURN_MIN_PORT:-49160}-${TURN_MAX_PORT:-49200}/udp"
+    volumes:
+      - ./infra/coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
+    environment:
+      TURN_EXTERNAL_IP: ${TURN_EXTERNAL_IP:-}
+    # `--external-ip` must be omitted entirely when unset — coturn rejects an
+    # empty value — so the flag is assembled in a shell rather than listed.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        exec turnserver -c /etc/coturn/turnserver.conf
+        --realm=${TURN_REALM:-softphone.local}
+        --user=${TURN_USERNAME:-softphone}:${TURN_PASSWORD:-softphone}
+        --min-port=${TURN_MIN_PORT:-49160}
+        --max-port=${TURN_MAX_PORT:-49200}
+        ${TURN_EXTERNAL_IP:+--external-ip=$$TURN_EXTERNAL_IP}
+
+  server:
+    build:
+      context: ./server
+    container_name: softphone-server
+    restart: unless-stopped
+    depends_on:
+      asterisk:
+        condition: service_healthy
+    ports:
+      - "${SERVER_PORT:-4000}:4000"
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      PUBLIC_HOSTNAME: ${PUBLIC_HOSTNAME:-localhost}
+      ASTERISK_SIP_DOMAIN: ${ASTERISK_SIP_DOMAIN:-localhost}
+      ASTERISK_HOST: asterisk
+      ARI_URL: http://asterisk:8088/ari
+      ARI_USERNAME: ${ARI_USERNAME:-switchboard}
+      ARI_PASSWORD: ${ARI_PASSWORD:-switchboard}
+      ARI_APP: ${ARI_APP:-switchboard}
+      AMI_HOST: asterisk
+      AMI_PORT: 5038
+      AMI_USERNAME: ${AMI_USERNAME:-switchboard}
+      AMI_PASSWORD: ${AMI_PASSWORD:-switchboard}
+      JWT_SECRET: ${JWT_SECRET:-dev-insecure-secret-change-me}
+      JWT_TTL: ${JWT_TTL:-12h}
+      MAIN_DID: ${MAIN_DID:-15551234567}
+      OPERATOR_EXTENSION: ${OPERATOR_EXTENSION:-100}
+      TRUNK_NAME: ${TRUNK_NAME:-primary}
+      SIP_WS_URL: ${SIP_WS_URL:-wss://${PUBLIC_HOSTNAME:-localhost}:8089/ws}
+      USERS_FILE: /app/config/users.json
+      TURN_URLS: turn:${PUBLIC_HOSTNAME:-localhost}:3478
+      TURN_USERNAME: ${TURN_USERNAME:-softphone}
+      TURN_PASSWORD: ${TURN_PASSWORD:-softphone}
+    volumes:
+      - ./config:/app/config:ro
+
+  web:
+    build:
+      context: ./web
+    container_name: softphone-web
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - "${WEB_PORT:-8080}:80"
+
+volumes:
+  asterisk-spool:
+  asterisk-logs:
+
+networks:
+  # Pinned so coturn's peer ACL can name exactly one subnet it is allowed to
+  # relay into (the Asterisk container) while denying RFC1918 generally.
+  default:
+    name: softphone
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
