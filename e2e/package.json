@@ -1,0 +1,14 @@
+{
+  "name": "softphone-e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser end-to-end test: two Chromium instances place a real call",
+  "scripts": {
+    "test": "node call-flow.mjs",
+    "postinstall": "playwright install chromium || echo 'browser download skipped — set CHROMIUM_PATH'"
+  },
+  "dependencies": {
+    "playwright": "^1.49.0"
+  }
+}

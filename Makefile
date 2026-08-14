@@ -5,7 +5,7 @@ COMPOSE ?= docker compose
 ASTERISK := $(COMPOSE) exec -T asterisk asterisk -rx
 
 .PHONY: help setup certs users up down restart logs reload status ps clean \
-        dev-server dev-web build check
+        dev-server dev-web build check test-e2e
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -71,6 +71,10 @@ build: ## Build both applications locally
 check: ## Typecheck both applications
 	@cd server && npm run typecheck
 	@cd web && npm run typecheck
+
+test-e2e: ## Two real browsers place a call and verify RTP (see docs/TESTING.md)
+	@test -d e2e/node_modules || (cd e2e && npm install)
+	@node e2e/call-flow.mjs
 
 clean: ## Stop and remove volumes (destroys voicemail and logs)
 	@$(COMPOSE) down -v

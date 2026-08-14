@@ -124,6 +124,20 @@ If you would rather test alone, dial `600` — an echo test that proves your
 microphone, the DTLS-SRTP media path and the jitter buffer are all working. It
 is the fastest way to tell a media problem from a signalling one.
 
+Or let two browsers do it for you:
+
+```bash
+make test-e2e
+```
+
+That drives two Chromium instances through a complete call and asserts RTP
+actually flowed in both directions — a softphone reporting "In call" while
+nobody can hear anything is the failure worth catching.
+
+**No trunk and no Docker?** You can still make and receive calls, including
+through the ring groups, queues and voicemail. See
+[docs/TESTING.md](docs/TESTING.md).
+
 ---
 
 ## Managing extensions

@@ -26,3 +26,6 @@ config/users.json
 .DS_Store
 .vscode/
 .idea/
+
+# e2e test dependencies
+e2e/node_modules/

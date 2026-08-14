@@ -16,6 +16,8 @@
     "certs": "./scripts/generate-dev-certs.sh",
     "prompts": "./scripts/generate-prompts.sh",
     "check": "npm --prefix server run typecheck && npm --prefix web run typecheck",
-    "build": "npm --prefix server run build && npm --prefix web run build"
+    "build": "npm --prefix server run build && npm --prefix web run build",
+    "serve": "node scripts/dev-serve.mjs",
+    "test:e2e": "node e2e/call-flow.mjs"
   }
 }
