@@ -228,8 +228,25 @@ also a check that codec negotiation landed where it should.
 
 ## The GitHub Pages demo
 
-`.github/workflows/pages.yml` publishes the web app to GitHub Pages on every
-push that touches `web/`.
+The workflow that publishes the web app to Pages is staged at
+**`docs/pages-workflow.yml`**, not at `.github/workflows/pages.yml` where it
+needs to live. GitHub requires the `workflow` OAuth scope to push anything into
+`.github/workflows/`, and the automation that wrote it did not have that scope.
+
+Activating it is two steps — one command, and one settings toggle that no
+workflow can perform on its own:
+
+```bash
+mkdir -p .github/workflows
+git mv docs/pages-workflow.yml .github/workflows/pages.yml
+git commit -m "Enable GitHub Pages deployment"
+git push
+```
+
+Then: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+
+After that it rebuilds on every push touching `web/`, and can be run by hand
+from Actions → *Deploy demo to GitHub Pages* → Run workflow.
 
 **Pages is static hosting.** It serves the bundle; it cannot run the control
 server or Asterisk. So the published build runs in **demo mode**: the real
@@ -241,14 +258,7 @@ It cannot carry audio. There is no SIP stack and no media path in that build,
 and the UI says so on the login screen and again in a banner once you are in —
 no one should be able to mistake it for a working phone.
 
-### Enabling it
-
-The workflow cannot turn Pages on by itself. Once, in the repository:
-
-**Settings → Pages → Build and deployment → Source: GitHub Actions**
-
-Then re-run the workflow (Actions → *Deploy demo to GitHub Pages* → Run
-workflow). The site lands at `https://<owner>.github.io/<repo>/`.
+The site lands at `https://<owner>.github.io/<repo>/`.
 
 ### Pointing the demo at a real PBX
 
