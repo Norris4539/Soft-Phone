@@ -168,6 +168,24 @@ try {
   await caller.page.waitForSelector('.call-panel--active', { timeout: 15000 });
   pass('resume');
 
+  // Hold/unhold triggers a re-INVITE and new transceivers. Whether the remote
+  // stream survives that is not visible in the UI — the panel says "In call"
+  // either way — so measure RTP again rather than trusting the label.
+  console.log('\nMedia after resume');
+  const beforeResume = new Map();
+  for (const side of [caller, callee]) {
+    beforeResume.set(side.extension, (await readMedia(side.page)).packetsReceived);
+  }
+  await caller.page.waitForTimeout(MEDIA_SETTLE_MS);
+  for (const side of [caller, callee]) {
+    const after = await readMedia(side.page);
+    const delta = after.packetsReceived - (beforeResume.get(side.extension) ?? 0);
+    console.log(`    ${side.extension}: +${delta} pkt in ${MEDIA_SETTLE_MS / 1000}s after resume`);
+    if (delta < MIN_PACKETS) {
+      fail(`${side.extension}: media did not recover after hold/resume (+${delta} pkt)`);
+    }
+  }
+
   await caller.page.getByRole('button', { name: 'Mute' }).click();
   await caller.page.waitForSelector('button.control--on', { timeout: 10000 });
   await caller.page.getByRole('button', { name: 'Unmute' }).click();
