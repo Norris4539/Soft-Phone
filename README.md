@@ -138,6 +138,10 @@ nobody can hear anything is the failure worth catching.
 through the ring groups, queues and voicemail. See
 [docs/TESTING.md](docs/TESTING.md).
 
+**Just want to see the interface?** A UI demo is published at
+<https://norris4539.github.io/Soft-Phone/> — the real screens driven by a
+simulation. It has no phone system behind it and carries no audio.
+
 ---
 
 ## Managing extensions

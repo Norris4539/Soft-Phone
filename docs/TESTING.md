@@ -228,25 +228,20 @@ also a check that codec negotiation landed where it should.
 
 ## The GitHub Pages demo
 
-The workflow that publishes the web app to Pages is staged at
-**`docs/pages-workflow.yml`**, not at `.github/workflows/pages.yml` where it
-needs to live. GitHub requires the `workflow` OAuth scope to push anything into
-`.github/workflows/`, and the automation that wrote it did not have that scope.
+Live at **<https://norris4539.github.io/Soft-Phone/>**, published by
+`.github/workflows/pages.yml` on every push that touches `web/`. It can also be
+run by hand from Actions → *Deploy demo to GitHub Pages* → Run workflow.
 
-Activating it is two steps — one command, and one settings toggle that no
-workflow can perform on its own:
+Two things had to be done by a human, once, and would have to be repeated for a
+fork:
 
-```bash
-mkdir -p .github/workflows
-git mv docs/pages-workflow.yml .github/workflows/pages.yml
-git commit -m "Enable GitHub Pages deployment"
-git push
-```
-
-Then: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-
-After that it rebuilds on every push touching `web/`, and can be run by hand
-from Actions → *Deploy demo to GitHub Pages* → Run workflow.
+- The workflow file has to be added by someone with the `workflow` OAuth scope.
+  GitHub blocks automation tokens from writing to `.github/workflows/`, so an
+  agent cannot install it — push it from a clone, or create it through the web
+  UI.
+- **Settings → Pages → Build and deployment → Source: GitHub Actions.** Nothing
+  can enable Pages for its own repository. (`configure-pages` runs with
+  `enablement: false`; it expects the setting to be there already.)
 
 **Pages is static hosting.** It serves the bundle; it cannot run the control
 server or Asterisk. So the published build runs in **demo mode**: the real
@@ -257,8 +252,6 @@ interface, showing colleagues, and checking the layout on a phone.
 It cannot carry audio. There is no SIP stack and no media path in that build,
 and the UI says so on the login screen and again in a banner once you are in —
 no one should be able to mistake it for a working phone.
-
-The site lands at `https://<owner>.github.io/<repo>/`.
 
 ### Pointing the demo at a real PBX
 
