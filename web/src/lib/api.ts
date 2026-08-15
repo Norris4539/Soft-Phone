@@ -1,5 +1,7 @@
 /** Typed client for the control server. */
 
+import { apiBase, isDemo } from './backend';
+
 export interface PublicUser {
   extension: string;
   name: string;
@@ -112,9 +114,12 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  // Demo mode never reaches the network — there is no backend to reach.
+  if (isDemo()) return demoRequest<T>(path, init);
+
   const token = storedToken();
 
-  const response = await fetch(`/api${path}`, {
+  const response = await fetch(`${apiBase()}/api${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
@@ -137,6 +142,29 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
+}
+
+/**
+ * Demo routing. Kept beside `request` so the two cannot drift: every endpoint
+ * the app calls has to be answered here too, or the demo breaks loudly rather
+ * than silently returning undefined.
+ */
+async function demoRequest<T>(path: string, init: RequestInit): Promise<T> {
+  const demo = await import('./demo');
+  // A little latency, so loading states are exercised rather than skipped.
+  await new Promise((resolve) => setTimeout(resolve, 120));
+
+  const body = init.body ? (JSON.parse(String(init.body)) as Record<string, string>) : {};
+
+  if (path === '/auth/login') return demo.demoLogin(String(body['extension'] ?? '101')) as T;
+  if (path === '/auth/me') return demo.demoMe() as T;
+  if (path === '/config') return demo.demoPhoneConfig() as T;
+  if (path === '/directory') return demo.demoDirectory() as T;
+  if (path === '/state') return demo.demoSnapshot() as T;
+  // Operator actions: accept and do nothing, as a 204 would.
+  if (path.startsWith('/calls/') || path.startsWith('/queues/')) return undefined as T;
+
+  throw new ApiError(`demo mode has no handler for ${path}`, 501);
 }
 
 export const api = {
@@ -198,6 +226,26 @@ export const api = {
  * should still be correct in the morning.
  */
 export function openEventStream(onSnapshot: (snapshot: Snapshot) => void): () => void {
+  // No socket in demo mode; poll the canned snapshot so the durations tick.
+  if (isDemo()) {
+    let stopped = false;
+    void import('./demo').then((demo) => {
+      const push = () => {
+        if (!stopped) onSnapshot(demo.demoSnapshot());
+      };
+      push();
+      const timer = window.setInterval(push, 2000);
+      cleanupDemo = () => {
+        stopped = true;
+        window.clearInterval(timer);
+      };
+    });
+    let cleanupDemo = () => {
+      stopped = true;
+    };
+    return () => cleanupDemo();
+  }
+
   let socket: WebSocket | null = null;
   let retryDelay = 1000;
   let retryTimer: number | undefined;
@@ -207,10 +255,14 @@ export function openEventStream(onSnapshot: (snapshot: Snapshot) => void): () =>
     const token = storedToken();
     if (!token || closed) return;
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    socket = new WebSocket(
-      `${protocol}//${window.location.host}/api/events?token=${encodeURIComponent(token)}`,
-    );
+    // Same origin normally; an explicit base when the bundle is served by a
+    // static host that has no /api to proxy.
+    const base = apiBase();
+    const origin = base
+      ? base.replace(/^http/, 'ws')
+      : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`;
+
+    socket = new WebSocket(`${origin}/api/events?token=${encodeURIComponent(token)}`);
 
     socket.addEventListener('open', () => {
       retryDelay = 1000;

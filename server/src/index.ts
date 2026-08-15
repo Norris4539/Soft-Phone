@@ -19,15 +19,28 @@ const app = express();
 app.disable('x-powered-by');
 app.use(express.json({ limit: '64kb' }));
 
-// In production the web container serves the app and proxies /api to here, so
-// requests are same-origin and CORS never comes into play.  It is enabled for
-// the dev server, which runs on a different port.
+// Normally the web container serves the app and proxies /api here, so requests
+// are same-origin and CORS never applies.  Two exceptions: the dev server runs
+// on its own port, and a statically hosted UI (GitHub Pages, a CDN) is a
+// genuinely different origin — which is what CORS_ORIGIN is for.
+//
+// Never a wildcard in production: these endpoints hand out SIP credentials, so
+// an unlisted origin should be refused rather than trusted.
 app.use(
   cors({
-    origin: config.env === 'production' ? false : true,
+    origin:
+      config.env === 'production'
+        ? config.corsOrigins.length > 0
+          ? config.corsOrigins
+          : false
+        : true,
     credentials: false,
   }),
 );
+
+if (config.env === 'production' && config.corsOrigins.length > 0) {
+  log.info('cross-origin browser access enabled', { origins: config.corsOrigins });
+}
 
 app.get('/api/health', (_req, res) => {
   const healthy = ari.connected && ami.connected;

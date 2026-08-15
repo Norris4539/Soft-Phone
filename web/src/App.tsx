@@ -9,6 +9,7 @@ import { Login } from './components/Login';
 import { usePhone } from './hooks/usePhone';
 import { useSwitchboard } from './hooks/useSwitchboard';
 import { api, clearToken, storedToken, type PublicUser } from './lib/api';
+import { isDemo } from './lib/backend';
 
 type Tab = 'phone' | 'switchboard';
 
@@ -107,6 +108,14 @@ export function App() {
           </button>
         </div>
       </header>
+
+      {isDemo() && (
+        <p className="alert alert--warning" role="status">
+          <strong>Demo mode.</strong> Calls are simulated and there is no audio —
+          this is the real interface with no phone system behind it. Sign out and
+          choose “Connect to a real server” to point it at a PBX.
+        </p>
+      )}
 
       {state.registrationError && (
         <p className="alert alert--error" role="alert">

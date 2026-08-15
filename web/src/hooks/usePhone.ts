@@ -1,18 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { api, type PhoneConfigResponse } from '../lib/api';
-import { Phone, type PhoneState } from '../lib/phone';
+import { isDemo } from '../lib/backend';
+import { DemoPhone } from '../lib/demo';
+import { Phone, type PhoneLike, type PhoneState } from '../lib/phone';
 
 const EMPTY: PhoneState = { registration: 'unregistered', calls: [] };
 
 /**
- * Owns the single Phone instance for the session and mirrors its state into
- * React. The Phone is created once per mount and torn down on sign-out —
- * recreating it on every render would drop live calls.
+ * Owns the single phone for the session and mirrors its state into React. It
+ * is created once per mount and torn down on sign-out — recreating it on every
+ * render would drop live calls.
+ *
+ * On a static host there is no SIP stack to drive, so a simulation stands in.
+ * Everything above this hook is identical either way.
  */
 export function usePhone(enabled: boolean) {
-  const phoneRef = useRef<Phone | null>(null);
-  if (phoneRef.current === null) phoneRef.current = new Phone();
+  const phoneRef = useRef<PhoneLike | null>(null);
+  if (phoneRef.current === null) phoneRef.current = isDemo() ? new DemoPhone() : new Phone();
   const phone = phoneRef.current;
 
   const [state, setState] = useState<PhoneState>(EMPTY);

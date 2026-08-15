@@ -71,6 +71,30 @@ export interface PhoneConfig {
   iceServers: RTCIceServer[];
 }
 
+/**
+ * What the UI needs from a phone.
+ *
+ * Extracted so the demo build can supply a simulation without any component
+ * knowing the difference — the screens are the real screens either way.
+ */
+export interface PhoneLike {
+  subscribe(listener: (state: PhoneState) => void): () => void;
+  getState(): PhoneState;
+  connect(config: PhoneConfig): Promise<void>;
+  disconnect(): Promise<void>;
+  call(destination: string, options?: { consultation?: boolean }): Promise<string>;
+  answer(callId: string): Promise<void>;
+  reject(callId: string): Promise<void>;
+  hangup(callId: string): Promise<void>;
+  setMuted(callId: string, muted: boolean): void;
+  setHold(callId: string, held: boolean): Promise<void>;
+  sendDtmf(callId: string, tone: string): boolean;
+  blindTransfer(callId: string, destination: string): Promise<void>;
+  startAttendedTransfer(callId: string, destination: string): Promise<string>;
+  completeAttendedTransfer(): Promise<void>;
+  cancelAttendedTransfer(): Promise<void>;
+}
+
 interface TrackedCall {
   id: string;
   session: Session;
@@ -93,7 +117,7 @@ function sdhOf(session: Session): SessionDescriptionHandler | undefined {
   return session.sessionDescriptionHandler as SessionDescriptionHandler | undefined;
 }
 
-export class Phone {
+export class Phone implements PhoneLike {
   private ua: UserAgent | null = null;
   private registerer: Registerer | null = null;
   private config: PhoneConfig | null = null;

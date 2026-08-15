@@ -8,6 +8,10 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
 
   return {
+    // GitHub Pages serves a project site from /<repo>/, so asset URLs need
+    // that prefix. Left as '/' for every other deployment, where the app is
+    // at the domain root.
+    base: env['VITE_BASE'] ?? '/',
     plugins: [react()],
     server: {
       port: 5173,

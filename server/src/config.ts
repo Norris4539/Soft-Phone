@@ -36,6 +36,21 @@ export const config = {
 
   usersFile: optional('USERS_FILE', '../config/users.json'),
 
+  /**
+   * Origins allowed to call this API from a browser.
+   *
+   * Normally empty: nginx serves the app and proxies /api, so requests are
+   * same-origin and CORS never applies. Set this when the UI is hosted
+   * somewhere else — GitHub Pages, a CDN — e.g.
+   *   CORS_ORIGIN=https://acme.github.io
+   * Comma-separated for more than one. Never use '*': these endpoints hand
+   * out SIP credentials.
+   */
+  corsOrigins: optional('CORS_ORIGIN', '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
+
   jwt: {
     secret: jwtSecret,
     ttl: optional('JWT_TTL', '12h'),

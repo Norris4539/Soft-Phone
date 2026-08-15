@@ -226,6 +226,71 @@ also a check that codec negotiation landed where it should.
 
 ---
 
+## The GitHub Pages demo
+
+`.github/workflows/pages.yml` publishes the web app to GitHub Pages on every
+push that touches `web/`.
+
+**Pages is static hosting.** It serves the bundle; it cannot run the control
+server or Asterisk. So the published build runs in **demo mode**: the real
+components driven by a simulation, with canned directory, queue and dashboard
+data. Every screen and control is reachable, and it is useful for reviewing the
+interface, showing colleagues, and checking the layout on a phone.
+
+It cannot carry audio. There is no SIP stack and no media path in that build,
+and the UI says so on the login screen and again in a banner once you are in —
+no one should be able to mistake it for a working phone.
+
+### Enabling it
+
+The workflow cannot turn Pages on by itself. Once, in the repository:
+
+**Settings → Pages → Build and deployment → Source: GitHub Actions**
+
+Then re-run the workflow (Actions → *Deploy demo to GitHub Pages* → Run
+workflow). The site lands at `https://<owner>.github.io/<repo>/`.
+
+### Pointing the demo at a real PBX
+
+The same bundle is not demo-only. Give it a control server and it becomes the
+real client:
+
+```
+https://<owner>.github.io/<repo>/?api=https://pbx.example.com
+```
+
+The value is remembered, so the query string is only needed once. There is also
+a “Connect to a real server” control on the login screen. `?api=` with an empty
+value forgets it and returns to the demo; `?demo=1` forces the demo back on.
+
+Three things have to be true for that to work:
+
+1. **The control server allows the origin.** It refuses unlisted cross-origin
+   browsers, because these endpoints hand out SIP credentials. Set:
+
+   ```ini
+   CORS_ORIGIN=https://<owner>.github.io
+   ```
+
+2. **The control server is HTTPS.** A page served over HTTPS cannot call a
+   plain-HTTP API; the browser blocks it as mixed content.
+
+3. **Asterisk's WSS listener is reachable and trusted** from wherever the
+   browser is. A self-signed development certificate will not do here — nothing
+   is available to click "accept" on.
+
+In other words: the front end can live on Pages, but the PBX still has to be
+somewhere real. Pages removes the need to host the *static* part, nothing more.
+
+### Running the demo locally
+
+```bash
+cd web && VITE_DEMO=1 npm run dev
+```
+
+Or add `?demo=1` to any deployment, including one wired to a real backend, when
+you want the simulation instead.
+
 ## Inspecting a running system
 
 ```bash
